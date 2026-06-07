@@ -627,42 +627,6 @@ with tab3:
         ref_df.style.hide(axis="index"),
     )
 
-    # 快速走势图联动：选中价差即画出历史曲线 + ±2σ 边界
-    st.markdown("---")
-    st.markdown("#### 快速走势图")
-    quick_spread = st.selectbox(
-        "选择价差查看历史走势",
-        all_spread_names,
-        key="quick_chart_spread",
-        label_visibility="collapsed",
-    )
-    if quick_spread and quick_spread in spreads.columns:
-        q_lookback = DAYS_MAP.get(stats_range, len(spreads))
-        q_df = spreads[quick_spread].tail(q_lookback)
-        q_mean = q_df.mean()
-        q_std = q_df.std()
-        q_z = (q_df.iloc[-1] - q_mean) / q_std if q_std > 0 else 0
-
-        q_fig = go.Figure()
-        q_fig.add_trace(go.Scatter(
-            x=q_df.index, y=q_df.values,
-            name=quick_spread, line=dict(color="#1a73e8", width=2),
-        ))
-        # ±2σ 虚线边界
-        q_fig.add_hline(y=q_mean + 2 * q_std, line_dash="dash", line_color="#ef5350",
-                        annotation_text=f"+2σ ({q_mean + 2*q_std:.0f})", annotation_position="top right")
-        q_fig.add_hline(y=q_mean - 2 * q_std, line_dash="dash", line_color="#26a69a",
-                        annotation_text=f"−2σ ({q_mean - 2*q_std:.0f})", annotation_position="bottom right")
-        q_fig.add_hline(y=q_mean, line_dash="dot", line_color="gray",
-                        annotation_text=f"均值 {q_mean:.0f}")
-        q_fig.update_layout(
-            title=f"{SPREAD_TO_CHAIN.get(quick_spread, '')} · {quick_spread}  |  当前: {q_df.iloc[-1]:.0f}  |  Z-Score: {q_z:+.2f}",
-            height=360, margin=dict(l=0, r=0, t=40, b=0),
-            xaxis_title=None, yaxis_title="元/吨",
-            yaxis=dict(tickformat=",.0f"),
-        )
-        st.plotly_chart(q_fig, width="stretch")
-
     st.markdown("---")
 
     # 价差历史数据表
