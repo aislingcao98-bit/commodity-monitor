@@ -232,13 +232,9 @@ function fix() {
       div.onmouseenter = function() { div.style.boxShadow = '0 2px 8px rgba(0,0,0,0.12)'; };
       div.onmouseleave = function() { div.style.boxShadow = 'none'; };
       div.onclick = function() {
-        // 计算点击的是第几张卡片
-        var cards = [];
-        p.querySelectorAll('div').forEach(function(d) {
-          if (d.style.cursor === 'pointer' &amp;&amp; d.style.borderLeftWidth === '3px' &amp;&amp; d.style.borderLeftStyle === 'solid') cards.push(d);
-        });
-        var idx = cards.indexOf(div);
-        if (idx &lt; 0) return;
+        // 从 data-spread-idx 读取对应图表块索引（避免卡片DOM顺序与图表顺序不一致）
+        var idx = div.getAttribute('data-spread-idx');
+        if (idx === null) return;
         // 找到图表块的起止标记
         var start = p.getElementById('spread-block-' + idx + '-start');
         var end = p.getElementById('spread-block-' + idx + '-end');
@@ -439,12 +435,13 @@ with tab2:
             row = live_spread_stats.loc[name]
             z = row["Z-Score"]
             chain = SPREAD_TO_CHAIN.get(name, "")
+            idx = spread_list.index(name)  # 对应下方图表块的索引
             if abs(z) > 2.0:
                 bg, border, level = "#fff5f5", "#ef5350", "🔴"
             else:
                 bg, border, level = "#fff8e1", "#ff9800", "⚠️"
             cards_html += (
-                f"<div style='width:160px;cursor:pointer;background:{bg};"
+                f"<div data-spread-idx='{idx}' style='width:160px;cursor:pointer;background:{bg};"
                 f"border-left:3px solid {border};padding:8px 10px;"
                 f"border-radius:4px;font-size:0.85rem;line-height:1.7'>"
                 f"{level} <b>{name}</b> &nbsp;<span style='color:#888;font-size:0.75rem'>{chain}</span><br>"
@@ -462,8 +459,9 @@ with tab2:
         for name in names:
             row = live_spread_stats.loc[name]
             chain = SPREAD_TO_CHAIN.get(name, "")
+            idx = spread_list.index(name)  # 对应下方图表块的索引
             cards_html += (
-                f"<div style='width:160px;cursor:pointer;"
+                f"<div data-spread-idx='{idx}' style='width:160px;cursor:pointer;"
                 f"padding:5px 6px;"
                 f"border-radius:4px;font-size:0.8rem;text-align:center;line-height:1.6;"
                 f"border-left:3px solid #d0d0d0;border-top:1px solid #e8e8e8;"
