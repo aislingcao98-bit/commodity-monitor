@@ -26,10 +26,15 @@ DATA_DIR = Path(__file__).parent / "data"
 def load_data(version: int = 1):
     price_df = pd.read_csv(DATA_DIR / "price_table.csv", index_col=0, parse_dates=True)
     spreads = pd.read_csv(DATA_DIR / "spreads.csv", index_col=0, parse_dates=True)
+
+    # 脏数据处理：向前填充停牌/节假日断档，剔除全空行列
+    price_df = price_df.ffill().bfill().dropna(axis=1, how="all")
+    spreads = spreads.ffill().bfill().dropna(axis=1, how="all")
+
     return price_df, spreads
 
 
-price_df, spreads = load_data(version=7)
+price_df, spreads = load_data(version=8)
 
 # 价差公式映射（按产业链分类）
 SPREAD_FORMULAS = {
@@ -106,20 +111,30 @@ def slice_by_range(df: pd.DataFrame, range_name: str) -> pd.DataFrame:
     return df.tail(n)
 
 
+@st.cache_data(show_spinner=False)
 def compute_stats_live(spreads: pd.DataFrame, lookback_days: int) -> pd.DataFrame:
-    """基于指定时间窗口动态计算价差统计"""
+    """基于指定时间窗口动态计算价差统计（按 lookback_days 缓存）"""
+    # 标准化窗口大小，防止超出数据长度
+    lookback_days = min(lookback_days, len(spreads))
     recent = spreads.tail(lookback_days)
+
     s = pd.DataFrame(index=spreads.columns)
     s["当前值"] = spreads.iloc[-1]
     s["均值"] = recent.mean()
     s["标准差"] = recent.std()
+    s["标准差"] = s["标准差"].replace(0, pd.NA)  # 标准差为 0 时置 NA，防止除零
+
+    # Z-Score：标准差缺失则记为 NA
     s["Z-Score"] = ((s["当前值"] - s["均值"]) / s["标准差"]).round(2)
+    s["Z-Score"] = s["Z-Score"].fillna(0)  # 无法计算时（如只有1条数据）记为 0
+
     s["历史最低"] = recent.min()
     s["历史最高"] = recent.max()
     s["百分位"] = (recent.rank(pct=True).iloc[-1] * 100)
+    s["百分位"] = s["百分位"].fillna(50).round(1)  # 无法计算时取中位
 
     def alert_label(z):
-        if abs(z) < 1.5:
+        if pd.isna(z) or abs(z) < 1.5:
             return "✅ 正常"
         elif abs(z) < 2.0:
             return "⚠️ 关注"
@@ -592,8 +607,8 @@ with tab3:
     render_styled_table(
         filtered_stats.style
         .background_gradient(subset=["Z-Score"], cmap="RdBu_r", vmin=-2.5, vmax=2.5)
-        .format("{:.2f}", subset=["当前值", "均值", "标准差", "Z-Score", "历史最低", "历史最高"])
-        .format("{:.1f}", subset=["百分位"]),
+        .format("{:.2f}", na_rep="-", subset=["当前值", "均值", "标准差", "Z-Score", "历史最低", "历史最高"])
+        .format("{:.1f}", na_rep="-", subset=["百分位"]),
     )
 
     st.markdown("---")
@@ -631,8 +646,8 @@ with tab3:
     render_styled_table(
         hist_df.style
         .hide(axis="index")
-        .format("{:.1f}", subset=hist_df.columns.difference(["时间"]))
-        .background_gradient(cmap="RdBu_r", axis=0, subset=hist_df.columns.difference(["时间"])),
+        .background_gradient(cmap="RdBu_r", axis=0, subset=hist_df.columns.difference(["时间"]))
+        .format("{:.1f}", na_rep="-", subset=hist_df.columns.difference(["时间"])),
         max_height=500,
     )
 
