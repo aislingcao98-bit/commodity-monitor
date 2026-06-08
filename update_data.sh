@@ -2,7 +2,7 @@
 # 能化品种数据每日自动更新（支持错过补跑 + 重复去重）
 # 由 launchd 调度：每个工作日 15:30，若休眠则唤醒后补跑
 
-cd /Users/caozhaohui/Documents/pythontrading/commodity_monitor
+cd /Users/caozhaohui/Desktop/cc
 LOG_DIR="logs"
 mkdir -p "$LOG_DIR"
 
