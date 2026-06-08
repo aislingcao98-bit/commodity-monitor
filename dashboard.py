@@ -164,57 +164,37 @@ st.markdown("""
     font-size: 1.4rem !important;
 }
 
-/* ========== 移动端适配 ========== */
-@media (max-width: 768px) {
-    /* 标题缩小 */
-    h1 { font-size: 1.2rem !important; }
-    h3 { font-size: 1.0rem !important; }
-
-    /* 指标卡片：缩小字号，4列一行 */
-    [data-testid="stMetricLabel"] {
-        font-size: 0.7rem !important;
-    }
-    [data-testid="stMetricValue"] {
-        font-size: 0.95rem !important;
-    }
-    [data-testid="stMetricDelta"] {
-        font-size: 0.65rem !important;
-    }
-    /* 水平容器允许换行，避免 12 列挤成一条线 */
-    [data-testid="stHorizontalBlock"] {
-        flex-wrap: wrap !important;
-        gap: 2px !important;
-    }
-
-    /* 预警/正常卡片：全宽 */
-    div[data-spread-idx] {
-        width: 100% !important;
-    }
-
-    /* Tab 按钮缩小 */
-    [data-testid="stTabs"] button {
-        font-size: 0.8rem !important;
-        padding: 6px 10px !important;
-    }
-
-    /* 表格横向滚动 + 缩小字号 */
-    [data-testid="stTable"] {
-        font-size: 0.75rem !important;
-        display: block !important;
-        overflow-x: auto !important;
-    }
-    th, td {
-        font-size: 0.7rem !important;
-        padding: 2px 4px !important;
-    }
-
-    /* Pills 选择器缩小 */
-    [data-testid="stPills"] button {
-        font-size: 0.7rem !important;
-        padding: 4px 8px !important;
+/* ========== 桌面端专用：手机访问全屏提示 ========== */
+#mobile-block {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: #0d1117;
+    z-index: 999999;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 24px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    text-align: center;
+}
+@media (max-width: 767px) {
+    #mobile-block {
+        display: flex !important;
     }
 }
 </style>
+
+<div id="mobile-block">
+    <div style="font-size: 4rem; margin-bottom: 24px;">💻</div>
+    <h2 style="color: #e6edf3; margin: 0 0 16px 0; font-size: 1.4rem;">请使用电脑端访问</h2>
+    <p style="color: #8b949e; font-size: 0.95rem; line-height: 1.8; max-width: 320px; margin: 0 0 8px 0;">
+        为保证大宗商品价差监控的高信息密度与 FLIP 动画交互体验，本终端仅支持 PC 电脑端访问。
+    </p>
+    <p style="color: #6e7681; font-size: 0.85rem; margin-top: 20px;">
+        请复制链接并在电脑浏览器中打开
+    </p>
+</div>
 """, unsafe_allow_html=True)
 
 # 通过同源 iframe 注入 JS，直接操作父页面 DOM 覆写 select 样式 + 预警卡片点击置顶
@@ -365,23 +345,15 @@ latest = price_df.iloc[-1]
 prev = price_df.iloc[-2]
 changes = ((latest - prev) / prev * 100).round(2)
 
-# 4 列一行 × 3 行 = 12 品种，手机端不会堆成 12 条
-COLS_PER_ROW = 4
-products = list(latest.items())
-for row_start in range(0, len(products), COLS_PER_ROW):
-    cols = st.columns(COLS_PER_ROW)
-    for i in range(COLS_PER_ROW):
-        idx = row_start + i
-        if idx >= len(products):
-            break
-        name, val = products[idx]
-        chg = changes[name]
-        with cols[i]:
-            st.metric(
-                label=name,
-                value=f"{val:.0f}",
-                delta=f"{chg:+.2f}%",
-            )
+cols = st.columns(len(latest))
+for i, (name, val) in enumerate(latest.items()):
+    chg = changes[name]
+    with cols[i]:
+        st.metric(
+            label=name,
+            value=f"{val:.0f}",
+            delta=f"{chg:+.2f}%",
+        )
 
 st.caption(f"数据更新至：{price_df.index[-1].strftime('%Y-%m-%d')} | 原油：7.33桶/吨")
 
