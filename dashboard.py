@@ -163,6 +163,63 @@ st.markdown("""
     font-weight: 700 !important;
     font-size: 1.4rem !important;
 }
+
+/* ========== 移动端适配 ========== */
+@media (max-width: 768px) {
+    /* 标题缩小 */
+    h1 { font-size: 1.2rem !important; }
+    h3 { font-size: 1.0rem !important; }
+
+    /* 指标卡片：缩小字号，4列一行 */
+    [data-testid="stMetricLabel"] {
+        font-size: 0.7rem !important;
+    }
+    [data-testid="stMetricValue"] {
+        font-size: 0.95rem !important;
+    }
+    [data-testid="stMetricDelta"] {
+        font-size: 0.65rem !important;
+    }
+    /* 水平容器允许换行，避免 12 列挤成一条线 */
+    [data-testid="stHorizontalBlock"] {
+        flex-wrap: wrap !important;
+        gap: 2px !important;
+    }
+
+    /* 预警/正常卡片：全宽 */
+    div[data-spread-idx] {
+        width: 100% !important;
+    }
+
+    /* Tab 按钮缩小 */
+    [data-testid="stTabs"] button {
+        font-size: 0.8rem !important;
+        padding: 6px 10px !important;
+    }
+
+    /* Plotly 图表自适应高度 */
+    .js-plotly-plot {
+        height: auto !important;
+        max-height: 300px !important;
+    }
+
+    /* 表格横向滚动 + 缩小字号 */
+    [data-testid="stTable"] {
+        font-size: 0.75rem !important;
+        display: block !important;
+        overflow-x: auto !important;
+    }
+    th, td {
+        font-size: 0.7rem !important;
+        padding: 2px 4px !important;
+    }
+
+    /* Pills 选择器缩小 */
+    [data-testid="stPills"] button {
+        font-size: 0.7rem !important;
+        padding: 4px 8px !important;
+    }
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -292,6 +349,18 @@ function fix() {
       };
     }
   });
+  // 6. 移动端：指标卡片强制 4 个一行
+  if (p.documentElement.clientWidth &lt; 768) {
+    p.querySelectorAll('[data-testid=&quot;stHorizontalBlock&quot;]').forEach(function(row) {
+      var cols = row.querySelectorAll('[data-testid=&quot;column&quot;]');
+      if (cols.length &gt; 4) {
+        cols.forEach(function(col) {
+          col.style.minWidth = 'calc(25% - 4px)';
+          col.style.flex = '0 0 calc(25% - 4px)';
+        });
+      }
+    });
+  }
 }
 fix();
 // 多次执行确保布局稳定后对齐

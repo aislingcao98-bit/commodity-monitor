@@ -31,6 +31,13 @@ fi
 echo "======== $(date '+%Y-%m-%d %H:%M:%S') 开始更新 ========" >> "$LOGFILE"
 /usr/bin/python3 data_fetcher.py >> "$LOGFILE" 2>&1
 echo "======== $(date '+%Y-%m-%d %H:%M:%S') 更新完成 ========" >> "$LOGFILE"
+
+# 推送到 GitHub，Streamlit Cloud 自动同步
+echo "$(date '+%Y-%m-%d %H:%M:%S') 推送至 GitHub..." >> "$LOGFILE"
+git add data/ >> "$LOGFILE" 2>&1
+git commit -m "auto: data update $(date +%Y-%m-%d)" >> "$LOGFILE" 2>&1
+git push >> "$LOGFILE" 2>&1
+echo "$(date '+%Y-%m-%d %H:%M:%S') 推送完成" >> "$LOGFILE"
 echo "" >> "$LOGFILE"
 
 # 只保留最近 30 天的日志
