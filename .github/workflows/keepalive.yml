@@ -1,0 +1,16 @@
+name: Streamlit 保活（防休眠）
+
+on:
+  schedule:
+    # 每 27 分钟 ping 一次（避开整点和半点高峰）
+    - cron: "3,30,57 * * * *"
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Streamlit
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" https://commodity-monitor-8ufimbbdcgydjxesjujkad.streamlit.app
+          echo ""
