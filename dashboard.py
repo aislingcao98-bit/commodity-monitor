@@ -197,12 +197,6 @@ st.markdown("""
         padding: 6px 10px !important;
     }
 
-    /* Plotly 图表自适应高度 */
-    .js-plotly-plot {
-        height: auto !important;
-        max-height: 300px !important;
-    }
-
     /* 表格横向滚动 + 缩小字号 */
     [data-testid="stTable"] {
         font-size: 0.75rem !important;
@@ -349,18 +343,6 @@ function fix() {
       };
     }
   });
-  // 6. 移动端：指标卡片强制 4 个一行
-  if (p.documentElement.clientWidth &lt; 768) {
-    p.querySelectorAll('[data-testid=&quot;stHorizontalBlock&quot;]').forEach(function(row) {
-      var cols = row.querySelectorAll('[data-testid=&quot;column&quot;]');
-      if (cols.length &gt; 4) {
-        cols.forEach(function(col) {
-          col.style.minWidth = 'calc(25% - 4px)';
-          col.style.flex = '0 0 calc(25% - 4px)';
-        });
-      }
-    });
-  }
 }
 fix();
 // 多次执行确保布局稳定后对齐
@@ -383,16 +365,23 @@ latest = price_df.iloc[-1]
 prev = price_df.iloc[-2]
 changes = ((latest - prev) / prev * 100).round(2)
 
-cols = st.columns(len(latest))
-for i, (name, val) in enumerate(latest.items()):
-    chg = changes[name]
-    color = "#ef5350" if chg > 0 else "#26a69a"
-    with cols[i]:
-        st.metric(
-            label=name,
-            value=f"{val:.0f}",
-            delta=f"{chg:+.2f}%",
-        )
+# 4 列一行 × 3 行 = 12 品种，手机端不会堆成 12 条
+COLS_PER_ROW = 4
+products = list(latest.items())
+for row_start in range(0, len(products), COLS_PER_ROW):
+    cols = st.columns(COLS_PER_ROW)
+    for i in range(COLS_PER_ROW):
+        idx = row_start + i
+        if idx >= len(products):
+            break
+        name, val = products[idx]
+        chg = changes[name]
+        with cols[i]:
+            st.metric(
+                label=name,
+                value=f"{val:.0f}",
+                delta=f"{chg:+.2f}%",
+            )
 
 st.caption(f"数据更新至：{price_df.index[-1].strftime('%Y-%m-%d')} | 原油：7.33桶/吨")
 
@@ -447,7 +436,7 @@ with tab1:
             xaxis_title=None, yaxis_title="元/吨",
             yaxis=dict(tickformat=",.0f"),
         )
-        st.plotly_chart(fig, width="stretch")
+        st.plotly_chart(fig, use_container_width=True)
 
     # 涨跌幅热力图
     st.markdown("<br>", unsafe_allow_html=True)
@@ -469,7 +458,7 @@ with tab1:
         height=max(250, n_products * 38), margin=dict(l=0, r=120, t=0, b=0),
         yaxis=dict(side="right"),
     )
-    st.plotly_chart(fig, width="stretch")
+    st.plotly_chart(fig, use_container_width=True)
 
 # ---- Tab 2: 价差分析 ----
 with tab2:
@@ -613,7 +602,7 @@ with tab2:
             xaxis_title=None, yaxis_title="元/吨",
             yaxis=dict(tickformat=",.0f"),
         )
-        st.plotly_chart(fig, width="stretch")
+        st.plotly_chart(fig, use_container_width=True)
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown(f'<div id="spread-block-{idx}-end"></div>', unsafe_allow_html=True)
 
