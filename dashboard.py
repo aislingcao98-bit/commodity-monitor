@@ -388,6 +388,7 @@ for i, (name, val) in enumerate(latest.items()):
             label=name,
             value=f"{val:.0f}",
             delta=f"{chg:+.2f}%",
+            delta_color="normal",  # 涨绿跌红
         )
 
 st.caption(f"数据更新至：{price_df.index[-1].strftime('%Y-%m-%d')} | 原油：7.33桶/吨")
