@@ -18,11 +18,37 @@ st.set_page_config(
     layout="wide",
 )
 
+# ---- 自动刷新配置 ----
+AUTO_REFRESH_MINUTES = 5  # 每隔多少分钟自动刷新页面（可修改）
+
+# 通过 JS 定时 reload 页面实现自动刷新
+st.components.v1.html(f"""
+<script>
+(function() {{
+    var countdown = {AUTO_REFRESH_MINUTES} * 60;
+    var el = document.getElementById('auto-refresh-timer');
+    function tick() {{
+        if (countdown <= 0) {{
+            window.location.reload();
+            return;
+        }}
+        var m = Math.floor(countdown / 60);
+        var s = countdown % 60;
+        if (el) el.textContent = m + '分' + (s < 10 ? '0' : '') + s + '秒后刷新';
+        countdown--;
+        setTimeout(tick, 1000);
+    }}
+    if (document.readyState === 'complete') tick();
+    else window.addEventListener('load', tick);
+}})();
+</script>
+""", height=0)
+
 # ---- 数据加载 ----
 DATA_DIR = Path(__file__).parent / "data"
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=300)  # 5分钟缓存，与页面自动刷新间隔一致
 def load_data(version: int = 1):
     price_df = pd.read_csv(DATA_DIR / "price_table.csv", index_col=0, parse_dates=True)
     spreads = pd.read_csv(DATA_DIR / "spreads.csv", index_col=0, parse_dates=True)
@@ -337,7 +363,16 @@ style="display:none;width:0;height:0;border:0">
 
 # ---- 主页面 ----
 st.title("🛢️ 能化品种基本面监控与预警看板")
-st.caption(f"全量数据：{price_df.index[0].strftime('%Y-%m-%d')} ~ {price_df.index[-1].strftime('%Y-%m-%d')} | 共 {len(price_df)} 个交易日")
+col_cap, col_timer = st.columns([5, 1], vertical_alignment="center")
+with col_cap:
+    st.caption(f"全量数据：{price_df.index[0].strftime('%Y-%m-%d')} ~ {price_df.index[-1].strftime('%Y-%m-%d')} | 共 {len(price_df)} 个交易日")
+with col_timer:
+    st.markdown(
+        f'<div style="text-align:right;font-size:0.8rem;color:#888;padding-right:8px">'
+        f'🔄 自动刷新 · 每{AUTO_REFRESH_MINUTES}分钟 &nbsp;|&nbsp; <span id="auto-refresh-timer"></span>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
 
 # ---- 第一行：关键指标卡片 ----
 st.markdown("### 📊 最新行情概览")
